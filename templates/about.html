@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}About — JobShield{% endblock %}
+
+{% block extra_head %}
+<style>
+  .about-header { margin-bottom: 3rem; }
+  .about-header h1 { font-family: var(--serif); font-size: 2.5rem; line-height: 1.15; margin-bottom: 0.75rem; }
+  .about-header p { color: var(--text2); font-size: 0.95rem; max-width: 580px; line-height: 1.7; }
+
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  @media(max-width:640px) { .about-grid { grid-template-columns:1fr; } }
+
+  .about-card { padding: 1.5rem; }
+  .about-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; display:flex;align-items:center;gap:0.4rem; }
+  .about-card p, .about-card li {
+    font-size: 0.82rem; color: var(--text2); line-height: 1.7;
+  }
+  .about-card ul { padding-left: 1rem; }
+  .about-card li { margin-bottom: 0.3rem; }
+
+  .pipeline {
+    display: flex; gap: 0; flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+  .pipe-step {
+    flex: 1; min-width: 150px;
+    padding: 1.25rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    position: relative;
+  }
+  .pipe-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .pipe-step:last-child  { border-radius: 0 var(--radius) var(--radius) 0; border-right: 1px solid var(--border); }
+  .pipe-step::after {
+    content: '›';
+    position: absolute; right: -10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3); font-size: 1.2rem; z-index: 1;
+  }
+  .pipe-step:last-child::after { display: none; }
+  .pipe-num { font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-bottom: 0.4rem; }
+  .pipe-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .pipe-desc { font-family: var(--mono); font-size: 0.65rem; color: var(--text3); }
+
+  .limitations-card { padding: 1.5rem; margin-top: 1rem; }
+  .limitations-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--amber); }
+  .lim-item { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; font-size: 0.82rem; color: var(--text2); line-height:1.55; }
+  .lim-item::before { content: '⚠'; color: var(--amber); flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="about-header anim-1">
+  <div class="section-label">About the System</div>
+  <h1>How JobShield <em class="serif" style="font-style:italic">works</em></h1>
+  <p>
+    JobShield is an academic prototype combining supervised machine learning
+    and natural language processing to detect fraudulent job postings.
+    Built with scikit-learn and Flask, trained on the EMSCAD dataset.
+  </p>
+</div>
+
+<!-- Pipeline visual -->
+<div class="pipeline anim-2">
+  <div class="pipe-step">
+    <div class="pipe-num">01</div>
+    <div class="pipe-name">Raw Text</div>
+    <div class="pipe-desc">Job description input</div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-num">02</div>
+    <div class="pipe-name">Clean</div>
+    <div class="pipe-desc">Strip HTML, lowercase, normalize</div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-num">03</div>
+    <div class="pipe-name">TF-IDF</div>
+    <div class="pipe-desc">5,000 features, bigrams</div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-num">04</div>
+    <div class="pipe-name">LR Model</div>
+    <div class="pipe-desc">predict_proba() inference</div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-num">05</div>
+    <div class="pipe-name">Result</div>
+    <div class="pipe-desc">Score + signals + domain</div>
+  </div>
+</div>
+
+<!-- Cards grid -->
+<div class="about-grid">
+
+  <div class="card about-card anim-3">
+    <h2>🗃️ Dataset — EMSCAD</h2>
+    <p>
+      The Employment Scam Aegean Dataset contains 17,880 real-world job postings
+      labeled as fraudulent or genuine. The dataset is highly imbalanced —
+      approximately 5% of postings are fraudulent — which is why
+      <code style="font-family:var(--mono);font-size:0.78rem">class_weight='balanced'</code>
+      is critical for the model to learn from minority class examples effectively.
+    </p>
+  </div>
+
+  <div class="card about-card anim-3">
+    <h2>📐 TF-IDF Vectorization</h2>
+    <p>
+      Text from title, description, company profile, requirements, and benefits columns
+      is merged and transformed using TF-IDF (Term Frequency–Inverse Document Frequency).
+      The vectorizer is configured with 5,000 max features, unigrams + bigrams,
+      sublinear TF scaling, and English stopword removal.
+      It is <strong>fit only on training data</strong> to prevent data leakage.
+    </p>
+  </div>
+
+  <div class="card about-card anim-3">
+    <h2>🤖 Logistic Regression Model</h2>
+    <p>
+      Logistic Regression with <code style="font-family:var(--mono);font-size:0.78rem">class_weight='balanced'</code>
+      and <code style="font-family:var(--mono);font-size:0.78rem">solver='lbfgs'</code>.
+      At inference, <code style="font-family:var(--mono);font-size:0.78rem">predict_proba()</code>
+      returns the probability of fraud — a float between 0 and 1.
+      Logistic Regression is ideal for sparse TF-IDF features and offers
+      interpretable coefficients for signal extraction.
+    </p>
+  </div>
+
+  <div class="card about-card anim-3">
+    <h2>💡 Signal Extraction</h2>
+    <p>
+      After prediction, the top words that contributed to the fraud score are extracted
+      using each word's TF-IDF value multiplied by its model coefficient.
+      Words with high positive coefficients that appear in the document
+      push toward "scam." This is a lightweight alternative to SHAP that
+      works efficiently for Logistic Regression without additional libraries.
+    </p>
+  </div>
+
+  <div class="card about-card anim-3">
+    <h2>📧 Domain Rule Engine</h2>
+    <ul>
+      <li>Extracts the domain from the recruiter's email address</li>
+      <li>Checks against a list of known free email providers</li>
+      <li>Flags suspicious domain patterns (lots of numbers, unusual TLDs)</li>
+      <li>Returns a verdict: Legitimate, Suspicious, Uncertain, or Not Provided</li>
+      <li>Fully rule-based — no ML involved — making it 100% explainable</li>
+    </ul>
+  </div>
+
+  <div class="card about-card anim-3">
+    <h2>⚖️ Risk Tiers</h2>
+    <ul>
+      <li><strong style="color:var(--green)">Low Risk (&lt;35%)</strong> — Few or no fraud signals detected</li>
+      <li><strong style="color:var(--amber)">Medium Risk (35–70%)</strong> — Some suspicious signals present</li>
+      <li><strong style="color:var(--red)">High Risk (&gt;70%)</strong> — Strong fraud indicators found</li>
+    </ul>
+    <p style="margin-top:0.75rem">
+      These thresholds can be tuned based on your precision/recall trade-off preference.
+      Raising the high-risk threshold reduces false positives but may miss some scams.
+    </p>
+  </div>
+
+</div>
+
+<!-- Limitations -->
+<div class="card limitations-card anim-4">
+  <h2>⚠️ Limitations & Ethical Notes</h2>
+  <div class="lim-item">This is an academic prototype. Do not rely solely on this tool to make decisions about job applications. Always verify independently.</div>
+  <div class="lim-item">The model was trained on a specific dataset and may not generalise perfectly to all job boards, industries, or regional posting styles.</div>
+  <div class="lim-item">Scam tactics evolve. The model reflects patterns in its training data and may miss novel fraud strategies not present in the EMSCAD dataset.</div>
+  <div class="lim-item">Class imbalance means the model may have higher false positive rates for some legitimate postings that use informal language.</div>
+  <div class="lim-item">No data is stored or logged by this application. Analysis happens in memory and is discarded after the result is rendered.</div>
+</div>
+
+{% endblock %}

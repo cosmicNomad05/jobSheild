@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Result — JobShield{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Result header ──────────────────────────────────────────── */
+  .result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .result-back {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.78rem; color: var(--text2);
+    text-decoration: none; font-family: var(--mono);
+    transition: color 0.15s;
+  }
+  .result-back:hover { color: var(--text); }
+
+  .result-timestamp {
+    font-family: var(--mono); font-size: 0.62rem; color: var(--text3);
+  }
+
+  /* ── Demo banner ────────────────────────────────────────────── */
+  .demo-banner {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem; color: #fcd34d;
+    font-family: var(--mono);
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  /* ── Main result grid ───────────────────────────────────────── */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 680px) { .result-grid { grid-template-columns: 1fr; } }
+
+  /* ── Score card ─────────────────────────────────────────────── */
+  .score-card {
+    padding: 2rem;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+
+  .score-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, var(--glow-color, rgba(99,102,241,0.12)), transparent 70%);
+    pointer-events: none;
+  }
+
+  .score-ring-wrap {
+    position: relative; width: 160px; height: 160px; margin-bottom: 1.25rem;
+  }
+  .score-ring {
+    width: 160px; height: 160px;
+    transform: rotate(-90deg);
+  }
+  .ring-bg { fill: none; stroke: var(--border2); stroke-width: 10; }
+  .ring-fill {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke-dasharray: 440;
+    stroke-dashoffset: 440;
+  }
+
+  .score-label-inner {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .score-pct {
+    font-family: var(--mono);
+    font-size: 2.2rem; font-weight: 700; line-height: 1;
+  }
+  .score-pct-label {
+    font-family: var(--mono);
+    font-size: 0.6rem; color: var(--text3);
+    margin-top: 0.2rem; letter-spacing: 0.08em;
+  }
+
+  .risk-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem; font-weight: 700;
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+  }
+  .risk-red    { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(239,68,68,0.25); }
+  .risk-amber  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
+  .risk-green  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+
+  .score-advice {
+    font-size: 0.78rem; color: var(--text2); line-height: 1.55;
+    max-width: 260px;
+  }
+
+  /* ── Stats card ─────────────────────────────────────────────── */
+  .stats-card { padding: 1.5rem; }
+
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .stat-row:last-child { border: none; }
+  .stat-row-label { color: var(--text2); font-family: var(--mono); font-size: 0.72rem; }
+  .stat-row-val { font-weight: 600; font-family: var(--mono); font-size: 0.82rem; }
+
+  .stat-meter {
+    height: 4px; background: var(--border2);
+    border-radius: 2px; margin-top: 0.4rem; overflow: hidden;
+  }
+  .stat-meter-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  /* ── Signals card ───────────────────────────────────────────── */
+  .signals-card { padding: 1.5rem; }
+  .signals-title {
+    font-size: 0.88rem; font-weight: 700;
+    margin-bottom: 0.25rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .signals-sub { font-size: 0.72rem; color: var(--text3); font-family: var(--mono); margin-bottom: 1.25rem; }
+
+  .signal-section { margin-bottom: 1.25rem; }
+  .signal-section-label {
+    font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 0.6rem;
+  }
+  .signal-section-label.fraud-label { color: var(--red); }
+  .signal-section-label.safe-label  { color: var(--green); }
+
+  .signal-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 0.45rem;
+  }
+  .signal-word {
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
+    min-width: 120px; flex-shrink: 0;
+  }
+  .signal-bar-wrap { flex: 1; height: 6px; background: var(--border2); border-radius: 3px; overflow: hidden; }
+  .signal-bar { height: 100%; border-radius: 3px; transition: width 1s ease; width: 0; }
+  .signal-bar.fraud { background: var(--red); }
+  .signal-bar.safe  { background: var(--green); }
+  .signal-score {
+    font-family: var(--mono); font-size: 0.62rem; color: var(--text3);
+    min-width: 40px; text-align: right; flex-shrink: 0;
+  }
+
+  .no-signals {
+    font-size: 0.78rem; color: var(--text3);
+    font-family: var(--mono);
+    padding: 0.75rem;
+    background: var(--bg2);
+    border-radius: 6px;
+  }
+
+  /* ── Domain card ────────────────────────────────────────────── */
+  .domain-card { padding: 1.5rem; }
+
+  .domain-verdict-row {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .dv-red    { background: var(--red-dim); border: 1px solid rgba(239,68,68,0.2); }
+  .dv-amber  { background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.2); }
+  .dv-green  { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.2); }
+  .dv-neutral { background: var(--surface); border: 1px solid var(--border); }
+
+  .dv-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .dv-label { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .dv-reason { font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
+  .dv-domain {
+    font-family: var(--mono); font-size: 0.7rem;
+    background: var(--bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px; display: inline-block;
+    margin-top: 0.35rem;
+  }
+
+  /* ── Input preview ──────────────────────────────────────────── */
+  .input-preview {
+    padding: 1.5rem; margin-top: 1rem;
+  }
+  .preview-toggle {
+    background: none; border: none; cursor: pointer;
+    color: var(--text2); font-family: var(--mono);
+    font-size: 0.72rem; display: flex; align-items: center; gap: 0.4rem;
+    padding: 0; transition: color 0.15s;
+  }
+  .preview-toggle:hover { color: var(--text); }
+  .preview-text {
+    display: none;
+    margin-top: 1rem;
+    font-size: 0.78rem; color: var(--text2);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px; overflow-y: auto;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: var(--mono);
+  }
+
+  /* ── CTA ────────────────────────────────────────────────────── */
+  .cta-row {
+    display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set score  = result.fraud_score %}
+{% set risk   = result.risk %}
+{% set domain = result.domain %}
+
+<!-- Header -->
+<div class="result-header anim-1">
+  <a href="/" class="result-back">← Analyze another posting</a>
+  <span class="result-timestamp">{{ result.timestamp }}</span>
+</div>
+
+<!-- Demo mode banner -->
+{% if result.demo_mode %}
+<div class="demo-banner anim-1">
+  ⚠ DEMO MODE — Model not loaded. Run <code>python train.py</code> to generate model files. Showing heuristic score.
+</div>
+{% endif %}
+
+<!-- Top grid: Score + Stats -->
+<div class="result-grid">
+
+  <!-- Score card -->
+  <div class="card score-card anim-2"
+       style="--glow-color: {% if risk.color == 'red' %}rgba(239,68,68,0.12){% elif risk.color == 'amber' %}rgba(245,158,11,0.08){% else %}rgba(34,197,94,0.08){% endif %}">
+
+    <div class="score-ring-wrap">
+      <svg class="score-ring" viewBox="0 0 160 160">
+        <circle class="ring-bg" cx="80" cy="80" r="70"/>
+        <circle class="ring-fill" id="ring-fill" cx="80" cy="80" r="70"
+          stroke="{% if risk.color == 'red' %}#ef4444{% elif risk.color == 'amber' %}#f59e0b{% else %}#22c55e{% endif %}"/>
+      </svg>
+      <div class="score-label-inner">
+        <span class="score-pct" style="color: {% if risk.color == 'red' %}#ef4444{% elif risk.color == 'amber' %}#f59e0b{% else %}#22c55e{% endif %}">
+          {{ score }}%
+        </span>
+        <span class="score-pct-label">FRAUD PROB.</span>
+      </div>
+    </div>
+
+    <div class="risk-badge risk-{{ risk.color }}">
+      {{ risk.icon }} {{ risk.label }}
+    </div>
+
+    <p class="score-advice">{{ risk.advice }}</p>
+  </div>
+
+  <!-- Stats card -->
+  <div class="card stats-card anim-2">
+    <div class="section-label" style="margin-bottom:1rem">Analysis Summary</div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">FRAUD PROBABILITY</span>
+      <span class="stat-row-val" style="color: {% if risk.color == 'red' %}var(--red){% elif risk.color == 'amber' %}var(--amber){% else %}var(--green){% endif %}">
+        {{ score }}%
+      </span>
+    </div>
+    <div class="stat-meter">
+      <div class="stat-meter-fill"
+           style="background: {% if risk.color == 'red' %}var(--red){% elif risk.color == 'amber' %}var(--amber){% else %}var(--green){% endif %}; width: {{ score }}%"></div>
+    </div>
+
+    <div class="stat-row" style="margin-top:0.5rem">
+      <span class="stat-row-label">RISK TIER</span>
+      <span class="stat-row-val">{{ risk.tier }}</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">WORD COUNT</span>
+      <span class="stat-row-val">{{ result.word_count }} words</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">CHAR COUNT</span>
+      <span class="stat-row-val">{{ result.char_count }} chars</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">EMAIL DOMAIN</span>
+      <span class="stat-row-val">
+        {% if domain.provided %}{{ domain.domain }}{% else %}<span style="color:var(--text3)">—</span>{% endif %}
+      </span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">MODEL</span>
+      <span class="stat-row-val">Logistic Regression</span>
+    </div>
+
+    <div class="stat-row">
+      <span class="stat-row-label">FEATURES</span>
+      <span class="stat-row-val">TF-IDF 5,000</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Second grid: Signals + Domain -->
+<div class="result-grid">
+
+  <!-- Signals card -->
+  <div class="card signals-card anim-3">
+    <div class="signals-title">🔍 Suspicious Word Signals</div>
+    <div class="signals-sub">Words that most influenced the fraud prediction</div>
+
+    {% if result.signals.fraud %}
+      <div class="signal-section">
+        <div class="signal-section-label fraud-label">🚨 Fraud-associated terms</div>
+        {% set max_score = result.signals.fraud[0].score %}
+        {% for sig in result.signals.fraud %}
+        <div class="signal-item">
+          <span class="signal-word">{{ sig.word }}</span>
+          <div class="signal-bar-wrap">
+            <div class="signal-bar fraud" data-width="{{ [(sig.score / max_score * 100)|round, 100]|min }}"></div>
+          </div>
+          <span class="signal-score">{{ sig.score }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-signals">
+        {% if result.demo_mode %}
+          Signal extraction available after model is loaded.
+        {% else %}
+          No strong fraud-associated terms detected in this posting.
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if result.signals.genuine %}
+      <div class="signal-section" style="margin-top:1rem">
+        <div class="signal-section-label safe-label">✅ Legitimate-associated terms</div>
+        {% set max_gscore = result.signals.genuine[0].score %}
+        {% for sig in result.signals.genuine %}
+        <div class="signal-item">
+          <span class="signal-word">{{ sig.word }}</span>
+          <div class="signal-bar-wrap">
+            <div class="signal-bar safe" data-width="{{ [(sig.score / max_gscore * 100)|round, 100]|min }}"></div>
+          </div>
+          <span class="signal-score">{{ sig.score }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Domain card -->
+  <div class="card domain-card anim-3">
+    <div class="section-label" style="margin-bottom:1rem">Recruiter Email Analysis</div>
+
+    <div class="domain-verdict-row
+      {% if domain.verdict == 'suspicious' %}dv-red
+      {% elif domain.verdict == 'uncertain' %}dv-amber
+      {% elif domain.verdict == 'legitimate' %}dv-green
+      {% else %}dv-neutral{% endif %}">
+      <div class="dv-icon">
+        {% if domain.verdict == 'suspicious' %}⚠️
+        {% elif domain.verdict == 'uncertain' %}❓
+        {% elif domain.verdict == 'legitimate' %}✅
+        {% else %}ℹ️{% endif %}
+      </div>
+      <div>
+        <div class="dv-label">{{ domain.label }}</div>
+        <div class="dv-reason">{{ domain.reason }}</div>
+        {% if domain.domain %}
+        <div class="dv-domain">{{ domain.domain }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">How domain scoring works</div>
+    <div style="font-size:0.77rem; color:var(--text2); line-height:1.65">
+      Our rule engine checks recruiter email domains against known free providers
+      (Gmail, Yahoo, Hotmail, etc.) and suspicious patterns. Legitimate companies
+      use corporate email domains. A recruiter emailing from
+      <code style="font-family:var(--mono);font-size:0.72rem;color:var(--accent2)">company.gmail.com</code>
+      is a red flag — it should be
+      <code style="font-family:var(--mono);font-size:0.72rem;color:var(--green)">recruiter@company.com</code>.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-label">General safety tips</div>
+    <div style="font-size:0.77rem; color:var(--text2); line-height:1.8">
+      🔒 Never pay fees to apply or receive equipment<br>
+      🔒 Verify the company exists on LinkedIn or their website<br>
+      🔒 Be cautious of vague salary ranges like "earn up to $5,000/week"<br>
+      🔒 Legitimate jobs don't require your SSN before an interview
+    </div>
+  </div>
+
+</div>
+
+<!-- Input preview -->
+<div class="card input-preview anim-4">
+  <button class="preview-toggle" onclick="togglePreview(this)">
+    ▶ Show submitted job text ({{ result.word_count }} words)
+  </button>
+  <div class="preview-text" id="preview-text">{{ job_text }}</div>
+</div>
+
+<!-- CTA -->
+<div class="cta-row anim-4">
+  <a href="/" class="btn btn-primary">🔍 Analyze Another Posting</a>
+  <button class="btn btn-ghost" onclick="window.print()">🖨 Print / Save Result</button>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Animate ring on load ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const score = {{ result.fraud_score_raw }};
+  const ring  = document.getElementById('ring-fill');
+  const circumference = 2 * Math.PI * 70; // r=70
+  ring.style.strokeDasharray  = circumference;
+  ring.style.strokeDashoffset = circumference;
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      ring.style.strokeDashoffset = circumference * (1 - score);
+    }, 100);
+  });
+
+  // ── Animate signal bars ─────────────────────────────────────
+  document.querySelectorAll('.signal-bar[data-width]').forEach(bar => {
+    setTimeout(() => {
+      bar.style.width = bar.dataset.width + '%';
+    }, 300);
+  });
+});
+
+// ── Preview toggle ──────────────────────────────────────────────
+function togglePreview(btn) {
+  const el = document.getElementById('preview-text');
+  const open = el.style.display === 'block';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = (open ? '▶' : '▼') +
+    ' ' + (open ? 'Show' : 'Hide') +
+    ' submitted job text ({{ result.word_count }} words)';
+}
+</script>
+{% endblock %}

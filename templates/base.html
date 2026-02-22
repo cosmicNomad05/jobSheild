@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JobShield — Fake Job Detector{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0e13;
+      --bg2:       #111520;
+      --surface:   #161b27;
+      --border:    #1f2737;
+      --border2:   #2a3347;
+
+      --text:      #e4e8f0;
+      --text2:     #8a93a8;
+      --text3:     #515a6e;
+
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,0.12);
+      --amber:     #f59e0b;
+      --amber-dim: rgba(245,158,11,0.12);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --blue:      #3b82f6;
+      --blue-dim:  rgba(59,130,246,0.12);
+
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+
+      --radius:    10px;
+      --mono:      'Geist Mono', monospace;
+      --sans:      'Geist', sans-serif;
+      --serif:     'Instrument Serif', serif;
+
+      --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Noise texture overlay ───────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    /* ── Nav ─────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11,14,19,0.85);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-inner {
+      max-width: 1060px; margin: 0 auto;
+      padding: 0 2rem;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 0.6rem;
+      text-decoration: none;
+    }
+    .nav-brand-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+    }
+    .nav-brand-name {
+      font-family: var(--mono);
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .nav-brand-name span { color: var(--accent2); }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 0.25rem;
+    }
+    .nav-links a {
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--text2); text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover { background: var(--surface); color: var(--text); }
+    .nav-links a.active { color: var(--text); background: var(--surface); }
+
+    .nav-badge {
+      font-family: var(--mono);
+      font-size: 0.6rem; font-weight: 600;
+      background: var(--blue-dim); color: var(--blue);
+      border: 1px solid rgba(59,130,246,0.25);
+      padding: 0.2rem 0.5rem; border-radius: 20px;
+      margin-left: 0.5rem;
+    }
+
+    /* ── Page wrapper ────────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1060px; margin: 0 auto;
+      padding: 3rem 2rem 5rem;
+    }
+
+    /* ── Typography utilities ────────────────────────────────── */
+    .serif { font-family: var(--serif); }
+    .mono  { font-family: var(--mono); }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; border: none;
+      text-decoration: none;
+      transition: all 0.18s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #5254cc;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99,102,241,0.35);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    /* ── Section label ───────────────────────────────────────── */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 0.6rem;
+    }
+
+    /* ── Pill / Tag ──────────────────────────────────────────── */
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.65rem; font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────── */
+    .divider {
+      height: 1px; background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── Animations ──────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .anim-1 { animation: fadeUp 0.5s ease both; }
+    .anim-2 { animation: fadeUp 0.5s 0.08s ease both; }
+    .anim-3 { animation: fadeUp 0.5s 0.16s ease both; }
+    .anim-4 { animation: fadeUp 0.5s 0.24s ease both; }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .page { padding: 2rem 1rem 4rem; }
+      .nav-inner { padding: 0 1rem; }
+      .nav-links a span { display: none; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-brand-icon">🛡️</div>
+      <span class="nav-brand-name">Job<span>Shield</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+        <span>Analyze</span>
+      </a>
+      <a href="/about" class="{% if request.path == '/about' %}active{% endif %}">
+        <span>About</span>
+      </a>
+      <span class="nav-badge">NLP + ML</span>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  {% block content %}{% endblock %}
+</div>
+
+<footer>
+  JobShield &nbsp;·&nbsp; Academic Prototype &nbsp;·&nbsp;
+  Logistic Regression + TF-IDF (5,000 features) &nbsp;·&nbsp;
+  EMSCAD Dataset (17,880 listings)
+</footer>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

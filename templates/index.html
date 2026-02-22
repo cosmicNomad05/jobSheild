@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+
+{% block title %}JobShield — Detect Fake Job Postings with AI{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Hero ──────────────────────────────────────────────────── */
+  .hero {
+    text-align: center;
+    padding: 3.5rem 0 3rem;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--accent2);
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.2);
+    padding: 0.3rem 0.8rem; border-radius: 20px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.4s ease infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+  }
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .hero-sub {
+    color: var(--text2);
+    font-size: 1rem;
+    max-width: 540px; margin: 0 auto 2rem;
+    line-height: 1.65;
+  }
+
+  .hero-stats {
+    display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat-val {
+    font-family: var(--mono);
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--text);
+    display: block;
+  }
+  .hero-stat-label {
+    font-size: 0.72rem; color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  /* ── Form card ──────────────────────────────────────────────── */
+  .form-card {
+    max-width: 760px; margin: 0 auto;
+  }
+
+  .form-card-inner {
+    padding: 2rem;
+  }
+
+  .form-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .form-title {
+    font-size: 0.92rem; font-weight: 700;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+
+  .char-counter {
+    font-family: var(--mono);
+    font-size: 0.65rem; color: var(--text3);
+    transition: color 0.2s;
+  }
+  .char-counter.warn { color: var(--amber); }
+  .char-counter.over { color: var(--red); }
+
+  textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    padding: 1rem;
+    resize: vertical;
+    min-height: 220px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  textarea::placeholder { color: var(--text3); }
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  }
+
+  /* ── Email field ─────────────────────────────────────────────── */
+  .email-row {
+    margin-top: 1rem;
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .input-group {
+    flex: 1; min-width: 240px;
+  }
+  .input-label {
+    display: block;
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--text2); margin-bottom: 0.4rem;
+    font-family: var(--mono);
+  }
+  .input-label .optional {
+    color: var(--text3); font-weight: 400;
+  }
+
+  input[type="email"] {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    padding: 0.65rem 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input[type="email"]::placeholder { color: var(--text3); }
+  input[type="email"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  }
+
+  /* ── Submit area ─────────────────────────────────────────────── */
+  .submit-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 1.25rem; flex-wrap: wrap; gap: 1rem;
+  }
+
+  .submit-hint {
+    font-size: 0.72rem; color: var(--text3); font-family: var(--mono);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+
+  .btn-analyze {
+    background: linear-gradient(135deg, var(--accent), #7c3aed);
+    color: #fff;
+    padding: 0.75rem 2rem;
+    font-size: 0.9rem; font-weight: 700;
+    border-radius: 8px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: all 0.2s ease;
+    position: relative; overflow: hidden;
+  }
+  .btn-analyze::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+  .btn-analyze:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+  }
+  .btn-analyze:hover::after { background: rgba(255,255,255,0.06); }
+  .btn-analyze:active { transform: translateY(0); }
+
+  .btn-analyze .spinner {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Errors ─────────────────────────────────────────────────── */
+  .error-banner {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.82rem; color: #fca5a5;
+  }
+  .error-banner ul { padding-left: 1rem; }
+  .error-banner li { margin-bottom: 0.2rem; }
+
+  /* ── Example prompts ─────────────────────────────────────────── */
+  .examples {
+    max-width: 760px; margin: 2rem auto 0;
+  }
+  .examples-title {
+    font-family: var(--mono);
+    font-size: 0.65rem; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+  .example-chips {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;
+  }
+  .example-chip {
+    font-size: 0.72rem; color: var(--text2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--mono);
+  }
+  .example-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent2);
+    background: rgba(99,102,241,0.06);
+  }
+
+  /* ── How it works strip ──────────────────────────────────────── */
+  .how-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 4rem;
+  }
+  .how-item {
+    background: var(--surface);
+    padding: 1.5rem;
+  }
+  .how-num {
+    font-family: var(--mono);
+    font-size: 0.65rem; font-weight: 700; color: var(--accent2);
+    margin-bottom: 0.75rem;
+  }
+  .how-item h3 {
+    font-size: 0.88rem; font-weight: 700; margin-bottom: 0.4rem;
+  }
+  .how-item p {
+    font-size: 0.77rem; color: var(--text2); line-height: 1.6;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="hero anim-1">
+  <div class="hero-eyebrow">NLP-Powered Scam Detection</div>
+  <h1>Is this job posting<br><em>real or fake?</em></h1>
+  <p class="hero-sub">
+    Paste any job description below. Our machine learning model analyzes
+    it in seconds and gives you a fraud probability score with
+    explainable signals.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-val">17,880</span>
+      <span class="hero-stat-label">training samples</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">5,000</span>
+      <span class="hero-stat-label">TF-IDF features</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">LR</span>
+      <span class="hero-stat-label">logistic regression</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">NLP</span>
+      <span class="hero-stat-label">text analysis</span>
+    </div>
+  </div>
+</div>
+
+<!-- Form -->
+<div class="form-card card anim-2">
+  <div class="form-card-inner">
+
+    {% if errors %}
+    <div class="error-banner">
+      <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/predict" id="analyze-form">
+
+      <div class="form-header">
+        <div class="form-title">📄 Job Description</div>
+        <span class="char-counter" id="char-counter">0 / 15,000</span>
+      </div>
+
+      <textarea
+        name="job_text"
+        id="job-text"
+        placeholder="Paste the full job description here — title, responsibilities, requirements, company info, salary, contact details...&#10;&#10;The more text you include, the more accurate the analysis."
+        maxlength="15000"
+      >{{ job_text or '' }}</textarea>
+
+      <div class="email-row">
+        <div class="input-group">
+          <label class="input-label" for="recruiter-email">
+            Recruiter Email <span class="optional">(optional)</span>
+          </label>
+          <input
+            type="email"
+            name="recruiter_email"
+            id="recruiter-email"
+            placeholder="recruiter@company.com"
+            value="{{ recruiter_email or '' }}"
+          >
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <div class="submit-hint">
+          🔒 Text is not stored. Analysis runs locally.
+        </div>
+        <button type="submit" class="btn-analyze" id="submit-btn">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-text">Analyze Posting →</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Example chips -->
+<div class="examples anim-3">
+  <div class="examples-title">Try an example</div>
+  <div class="example-chips">
+    <span class="example-chip" onclick="fillExample('scam1')">🚨 Work-from-home scam</span>
+    <span class="example-chip" onclick="fillExample('scam2')">🚨 Data entry fraud</span>
+    <span class="example-chip" onclick="fillExample('legit1')">✅ Software engineer role</span>
+    <span class="example-chip" onclick="fillExample('legit2')">✅ Marketing manager</span>
+  </div>
+</div>
+
+<!-- How it works -->
+<div class="how-strip anim-4">
+  <div class="how-item">
+    <div class="how-num">01 / INPUT</div>
+    <h3>Paste the Job</h3>
+    <p>Copy any job description — from LinkedIn, Indeed, email, or anywhere else.</p>
+  </div>
+  <div class="how-item">
+    <div class="how-num">02 / NLP</div>
+    <h3>Text Analysis</h3>
+    <p>Text is cleaned, normalized, and converted into 5,000 TF-IDF features.</p>
+  </div>
+  <div class="how-item">
+    <div class="how-num">03 / ML</div>
+    <h3>Model Inference</h3>
+    <p>Logistic Regression predicts a fraud probability, trained on 17,880 real job postings.</p>
+  </div>
+  <div class="how-item">
+    <div class="how-num">04 / RESULT</div>
+    <h3>Fraud Score</h3>
+    <p>You get a percentage score, risk tier, suspicious word signals, and domain analysis.</p>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Char counter ───────────────────────────────────────────────
+const textarea = document.getElementById('job-text');
+const counter  = document.getElementById('char-counter');
+
+function updateCounter() {
+  const len = textarea.value.length;
+  counter.textContent = `${len.toLocaleString()} / 15,000`;
+  counter.className = 'char-counter' +
+    (len > 13000 ? ' over' : len > 10000 ? ' warn' : '');
+}
+textarea.addEventListener('input', updateCounter);
+updateCounter();
+
+// ── Submit loading state ───────────────────────────────────────
+document.getElementById('analyze-form').addEventListener('submit', function() {
+  const btn     = document.getElementById('submit-btn');
+  const spinner = document.getElementById('spinner');
+  const txt     = document.getElementById('btn-text');
+  btn.disabled  = true;
+  spinner.style.display = 'block';
+  txt.textContent = 'Analyzing...';
+});
+
+// ── Example filler ─────────────────────────────────────────────
+const EXAMPLES = {
+  scam1: `WORK FROM HOME - Make $500-$2000 Per Week!
+
+Are you looking for easy money from the comfort of your own home? We are hiring immediately! No experience required. Start earning today!
+
+Job Description:
+- Process simple online forms and surveys
+- Work whenever you want, no fixed hours
+- Get paid daily via PayPal or Western Union
+- Earn $25 per hour guaranteed
+
+Requirements:
+- Must be 18 or older
+- Internet connection required
+- No skills needed, we provide full training
+- Must be willing to pay small registration fee of $49.99 to receive your starter kit
+
+This is a limited time opportunity! 500 positions available worldwide. We currently have openings in all countries. Apply now and start making money within 24 hours! 
+
+Contact our HR team at: jobs_work_home_2024@gmail.com
+
+WARNING: Due to high demand, this offer expires soon! Act NOW! Don't miss out on this life-changing opportunity!`,
+
+  scam2: `Data Entry Jobs - Work From Home - $45/hr - No Experience Needed
+
+We are a fast growing company looking for people who want to earn extra income part time or full time from home!
+
+WHAT YOU WILL DO:
+Copy and paste data from one document to another. Simple tasks that anyone can do! No special skills or degree required.
+
+WHAT WE OFFER:
+- $45 per hour starting pay
+- Flexible schedule - you choose your hours
+- Weekly payment via wire transfer
+- Bonus commissions available
+- Work in your pajamas!
+
+HOW TO APPLY:
+Send your name and phone number to our recruiter Sarah at sarah.recruitment.jobs@yahoo.com and we will send you the application forms along with information on how to purchase your required software license ($75 refundable deposit).
+
+Positions fill fast! Only 12 spots left. Apply immediately before it's too late!!!!!
+
+We are an equal opportunity employer. Previous applicants who have earned over $3000 their first week are encouraged to share their success stories.`,
+
+  legit1: `Software Engineer — Backend Infrastructure
+Acme Technologies | Austin, TX | Full-Time
+
+About Acme Technologies:
+Acme Technologies builds cloud infrastructure tools used by over 10,000 engineering teams globally. We're a Series B company with 150 employees, headquartered in Austin with remote offices in New York and London.
+
+Role Overview:
+We're looking for a backend engineer to join our Infrastructure team. You'll be responsible for designing and maintaining the systems that power our core product, working closely with a team of 8 engineers and reporting to the VP of Engineering.
+
+Responsibilities:
+- Design, build, and maintain scalable backend services using Go and Python
+- Own reliability and performance of our data pipeline (1M+ events/day)
+- Participate in on-call rotation (once every 6 weeks)
+- Code reviews and mentoring of junior engineers
+- Collaborate with product managers on technical scoping
+
+Requirements:
+- 3+ years of professional software engineering experience
+- Proficiency in Go, Python, or similar systems languages
+- Experience with distributed systems, databases (PostgreSQL, Redis)
+- Familiarity with Kubernetes and cloud platforms (AWS/GCP)
+
+Nice to Have:
+- Experience with observability tooling (Prometheus, Grafana, Datadog)
+- Open source contributions
+- Previous startup experience
+
+Compensation & Benefits:
+- Base salary: $140,000 - $170,000 DOE
+- Equity: 0.1% - 0.25% options
+- Full health, dental, vision insurance
+- $2,000 annual learning budget
+- Remote-friendly (2 days/week in Austin office required)
+
+To apply, send your resume to careers@acmetechnologies.io or apply at acmetechnologies.io/careers.`,
+
+  legit2: `Marketing Manager — Brand & Content
+Greenfield Retail Group | Chicago, IL | Full-Time (Hybrid)
+
+Company Overview:
+Greenfield Retail Group operates 47 specialty retail stores across the Midwest. We're growing our in-house marketing team and looking for a strategic and hands-on Marketing Manager to own our brand presence across channels.
+
+Position Summary:
+The Marketing Manager will lead brand strategy, content marketing, email campaigns, and social media for Greenfield's consumer-facing brands. This is a senior individual contributor role with potential to grow a small team.
+
+Key Responsibilities:
+- Develop and execute multi-channel marketing campaigns (digital, email, in-store)
+- Manage content calendar across Instagram, Facebook, and TikTok
+- Oversee email marketing program (Klaviyo), including segmentation and A/B testing
+- Work with external agencies on seasonal creative production
+- Track and report on KPIs: reach, engagement, conversion, and revenue attribution
+- Collaborate with store managers on local marketing initiatives
+
+Qualifications:
+- 4+ years in marketing, with at least 2 years in a brand or content-focused role
+- Experience in retail or consumer goods strongly preferred
+- Proficiency in Klaviyo, Google Analytics, Meta Business Suite
+- Strong writing and project management skills
+- Bachelor's degree in Marketing, Communications, or related field
+
+Compensation:
+- Salary: $72,000 - $85,000 based on experience
+- Annual performance bonus up to 10%
+- Health, dental, vision benefits (company pays 80%)
+- 401(k) with 4% match
+- 20 days PTO + 10 company holidays
+
+Location: Hybrid — 3 days in Chicago office, 2 days remote
+
+To apply: Submit your resume and a brief cover letter to hr@greenfieldretail.com`
+};
+
+function fillExample(key) {
+  const ta = document.getElementById('job-text');
+  ta.value = EXAMPLES[key];
+  updateCounter();
+  ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  ta.focus();
+}
+</script>
+{% endblock %}
