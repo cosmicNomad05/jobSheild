@@ -22,48 +22,8 @@ fakejob/
     ├── index.html          ← Homepage + input form
     ├── result.html         ← Analysis results page
     └── about.html          ← About page
+
 ```
-
----
-
-## Quick Start
-
-### 1. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2. Get the dataset
-
-Download the EMSCAD dataset from Kaggle:
-https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
-
-Place the CSV file at:
-```
-data/fake_job_postings.csv
-```
-
-### 3. Train the model
-
-```bash
-python train.py --data data/fake_job_postings.csv
-```
-
-This will:
-- Load and preprocess the 17,880 job listings
-- Fit TF-IDF vectorizer (5,000 features, bigrams)
-- Train Logistic Regression with class_weight='balanced'
-- Print evaluation metrics (Precision, Recall, F1, ROC-AUC)
-- Save `model/model.pkl` and `model/vectorizer.pkl`
-
-### 4. Run the web app
-
-```bash
-python app.py
-```
-
-Open your browser at: **http://localhost:5000**
 
 ---
 
@@ -112,36 +72,6 @@ Results Page           Score gauge + risk badge + signals + domain verdict
 | N-gram range        | (1, 2) — unigrams + bigrams  |
 | Train/test split    | 80/20, stratified            |
 | Evaluation metrics  | Precision, Recall, F1, AUC   |
-
----
-
-## Production Deployment
-
-Use Gunicorn instead of Flask dev server:
-
-```bash
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
-
-Environment variables:
-```bash
-SECRET_KEY=your-secret-key-here
-FLASK_DEBUG=false
-PORT=5000
-```
-
----
-
-## Extending the Project
-
-| Feature                  | How                                         |
-|--------------------------|---------------------------------------------|
-| SHAP explainability      | `pip install shap` + LinearExplainer        |
-| File upload (PDF/DOCX)   | `pdfplumber` + `python-docx`               |
-| URL scraping             | `httpx` + `trafilatura`                     |
-| Transformer upgrade      | Fine-tune `distilbert-base-uncased`         |
-| Result history           | Add SQLite with `flask-sqlalchemy`          |
-| User accounts            | Add `flask-login` + `flask-bcrypt`          |
 
 ---
 
