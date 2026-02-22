@@ -1,14 +1,24 @@
 #!/bin/bash
-echo "Installing dependencies..."
+set -e  # stop on any error
+
+echo "=== Installing dependencies ==="
 pip install -r requirements.txt
 
-echo "Downloading dataset..."
-# If you've uploaded your CSV somewhere public (Google Drive, etc.), download it here.
-# Example with gdown (Google Drive):
-pip install gdown
-gdown "1uEeG7EreNuv3YI5O-XOt8DITOfLAg9qT" -O data/fake_job_postings.csv
+echo "=== Downloading model from Hugging Face Hub ==="
+python -c "
+from huggingface_hub import hf_hub_download
+import os
 
-echo "Training model..."
-python train.py --data data/fake_job_postings.csv
+REPO_ID = 'vkxaHere/jobshield-model'
+os.makedirs('model', exist_ok=True)
 
-echo "Build complete."
+print('Downloading model.pkl ...')
+hf_hub_download(repo_id=REPO_ID, filename='model.pkl', local_dir='model')
+
+print('Downloading vectorizer.pkl ...')
+hf_hub_download(repo_id=REPO_ID, filename='vectorizer.pkl', local_dir='model')
+
+print('Model files ready.')
+"
+
+echo "=== Build complete ==="
